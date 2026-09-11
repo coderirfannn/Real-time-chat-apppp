@@ -26,7 +26,7 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter'
 import {
   ArrowLeft,
   Check,
