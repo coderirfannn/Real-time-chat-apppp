@@ -10,6 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: users
+    description: User discovery and profile operations
+  - name: conversations
+    description: Conversation operations
+  - name: messages
+    description: Message operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,214 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation or duplicate account error
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log into an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out the current account
+      responses:
+        "204":
+          description: Logged out
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get the current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Authentication required
+  /users/search:
+    get:
+      operationId: searchUsers
+      tags: [users]
+      summary: Search for people to message
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Matching users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+  /users/profile:
+    patch:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update the current profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List the current user's conversations
+      responses:
+        "200":
+          description: Conversations ordered by recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Find or create a direct conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+  /conversations/{conversationId}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List recent messages for a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Paginated messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePage"
+  /messages:
+    post:
+      operationId: createMessage
+      tags: [messages]
+      summary: Persist a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Persisted message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /messages/{messageId}:
+    delete:
+      operationId: deleteMessage
+      tags: [messages]
+      summary: Delete a message sent by the current user
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Message deleted
+  /conversations/{conversationId}/read:
+    post:
+      operationId: markConversationRead
+      tags: [messages]
+      summary: Mark messages in a conversation as read
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Messages marked read
 components:
   schemas:
     HealthStatus:
@@ -33,4 +249,91 @@ components:
           type: string
       required:
         - status
+    User:
+      type: object
+      required: [id, name, username, email, avatar, bio, isOnline, lastSeen, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        username: { type: string }
+        email: { type: string, format: email }
+        avatar: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        isOnline: { type: boolean }
+        lastSeen: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    RegisterInput:
+      type: object
+      required: [name, username, email, password]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        username: { type: string, minLength: 3, maxLength: 30 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 100 }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+    ProfileUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        username: { type: string, minLength: 3, maxLength: 30 }
+        bio: { type: ["string", "null"], maxLength: 280 }
+        avatar: { type: ["string", "null"] }
+    ConversationInput:
+      type: object
+      required: [participantId]
+      properties:
+        participantId: { type: string }
+    Conversation:
+      type: object
+      required: [id, participant, lastMessage, lastMessageAt, unreadCount]
+      properties:
+        id: { type: string }
+        participant:
+          $ref: "#/components/schemas/User"
+        lastMessage:
+          type: ["string", "null"]
+        lastMessageAt: { type: ["string", "null"], format: date-time }
+        unreadCount: { type: integer, minimum: 0 }
+    MessageInput:
+      type: object
+      required: [conversationId, content]
+      properties:
+        conversationId: { type: string }
+        content: { type: string, minLength: 1, maxLength: 4000 }
+        replyTo: { type: ["string", "null"] }
+    Message:
+      type: object
+      required: [id, conversationId, senderId, receiverId, content, messageType, status, deliveredAt, readAt, replyTo, createdAt]
+      properties:
+        id: { type: string }
+        conversationId: { type: string }
+        senderId: { type: string }
+        receiverId: { type: string }
+        content: { type: string }
+        messageType: { type: string, enum: [text, emoji] }
+        status: { type: string, enum: [sending, sent, delivered, read] }
+        deliveredAt: { type: ["string", "null"], format: date-time }
+        readAt: { type: ["string", "null"], format: date-time }
+        replyTo: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    MessagePage:
+      type: object
+      required: [messages, hasMore]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        hasMore: { type: boolean }
 

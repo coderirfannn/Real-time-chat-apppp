@@ -1,0 +1,1269 @@
+# Build a Production-Ready MERN Real-Time Chat Application
+
+You are an expert full-stack engineer. Build a complete, production-quality real-time chat application from scratch using the MERN stack.
+
+The application must have a clean, modern, professional UI/UX, be fully responsive on desktop/tablet/mobile, and support reliable real-time messaging with online/offline presence and message delivery tracking.
+
+Do NOT create a basic demo or tutorial project. Build it like a real production application with proper architecture, security, validation, error handling, loading states, empty states, responsive design, and maintainable code.
+
+---
+
+# 1. TECHNOLOGY STACK
+
+## Frontend
+
+* React.js
+* Vite
+* React Router
+* Tailwind CSS
+* Lucide React icons
+* Axios
+* Socket.IO Client
+* React Context or Zustand for global state
+* React Hook Form where useful
+
+## Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* Socket.IO
+* JWT authentication
+* bcrypt/bcryptjs
+* cookie-parser
+* CORS
+* Helmet
+* express-rate-limit
+* dotenv
+
+## Database
+
+Use MongoDB Atlas.
+
+The MongoDB connection MUST come from:
+
+MONGODB_URI
+
+Do NOT hardcode the MongoDB connection string anywhere in the source code.
+
+Use Replit Secrets / environment variables.
+
+---
+
+# 2. CORE APPLICATION
+
+Create a modern messaging application similar in functionality to WhatsApp/Telegram/Discord DMs, but with an original UI.
+
+The application should support:
+
+### Authentication
+
+* Register
+* Login
+* Logout
+* JWT authentication
+* Secure password hashing
+* Protected routes
+* Persistent authentication
+* Automatic session validation
+* Proper authentication error handling
+
+### User Profile
+
+Users should have:
+
+* Name
+* Username
+* Email
+* Profile picture
+* Bio
+* Online/offline status
+* Last seen
+* Account creation date
+
+Allow users to:
+
+* Edit profile
+* Change profile picture
+* Change password
+* Update bio
+* Logout
+
+---
+
+# 3. CHAT FEATURES
+
+Support:
+
+### One-to-one messaging
+
+Users can:
+
+* Search users
+* Start a conversation
+* Send messages
+* Receive messages instantly
+* View conversation history
+* Delete messages
+* Reply to messages
+* Copy message text
+
+Message types should initially support:
+
+* Text
+* Emoji
+
+Structure the backend so image/file/voice messages can be added later without rewriting the architecture.
+
+---
+
+# 4. REAL-TIME COMMUNICATION
+
+Use Socket.IO.
+
+This is extremely important.
+
+Messages must appear instantly without refreshing the page.
+
+Implement:
+
+### Real-time message sending
+
+When User A sends a message:
+
+1. Frontend sends message through Socket.IO/API.
+2. Backend validates the message.
+3. Backend saves the message to MongoDB.
+4. Backend emits the message to User B if connected.
+5. User B sees the message immediately.
+6. User A receives confirmation that the message was successfully stored.
+
+Do NOT rely only on frontend state.
+
+MongoDB must remain the source of truth.
+
+---
+
+# 5. MESSAGE DELIVERY STATES
+
+Implement proper message status:
+
+### Sending
+
+Message is currently being sent.
+
+### Sent
+
+Message successfully reached the server and was stored in MongoDB.
+
+### Delivered
+
+Message was delivered to the recipient's connected client.
+
+### Read
+
+Recipient opened/read the conversation and the message was seen.
+
+Use appropriate UI indicators.
+
+Example:
+
+Sending:
+○
+
+Sent:
+✓
+
+Delivered:
+✓✓
+
+Read:
+✓✓
+
+Do not fake these states.
+
+They must be connected to actual Socket.IO events and backend state.
+
+---
+
+# 6. ONLINE / OFFLINE PRESENCE
+
+Implement a reliable presence system.
+
+Every user should have:
+
+* Online
+* Offline
+* Last seen
+
+When a user connects through Socket.IO:
+
+Set:
+
+isOnline = true
+
+When the socket disconnects:
+
+Set:
+
+isOnline = false
+
+Update:
+
+lastSeen = current timestamp
+
+IMPORTANT:
+
+A user can have multiple browser tabs/devices.
+
+Do NOT mark the user offline simply because one socket disconnected.
+
+Track active socket connections per user.
+
+Only mark the user offline when their last active socket disconnects.
+
+Use an appropriate server-side in-memory connection tracker.
+
+Design the system so Redis can replace the in-memory tracker later for horizontal scaling.
+
+---
+
+# 7. ONLINE STATUS UI
+
+Display:
+
+🟢 Online
+
+or
+
+Last seen recently
+
+or
+
+Last seen today at 10:42 PM
+
+For conversation headers.
+
+The status should update in real time.
+
+If User A opens User B's chat and User B comes online, User A should see the status update without refreshing.
+
+---
+
+# 8. TYPING INDICATOR
+
+Implement real-time typing indicators.
+
+Example:
+
+User B is typing...
+
+When the user stops typing, remove the indicator.
+
+Use Socket.IO events.
+
+Do NOT save typing events to MongoDB.
+
+Use debouncing/throttling to avoid excessive socket traffic.
+
+---
+
+# 9. READ RECEIPTS
+
+When a user opens a conversation:
+
+Mark appropriate unread messages as read.
+
+Emit a Socket.IO event to the sender.
+
+The sender should immediately see the message change from:
+
+✓✓
+
+to the read state.
+
+Store the necessary read information in MongoDB.
+
+Do not mark messages as read merely because they arrived.
+
+They should become read when the recipient actually views the conversation.
+
+---
+
+# 10. OFFLINE MESSAGE HANDLING
+
+This is a critical requirement.
+
+If User A sends a message while User B is offline:
+
+1. Save the message to MongoDB.
+2. User A sees it as "Sent".
+3. Do not pretend it was delivered.
+4. When User B comes online:
+
+   * establish Socket.IO connection
+   * fetch/synchronize undelivered messages
+   * deliver them
+   * update delivery status
+5. User A should then see the message become "Delivered".
+
+If User B opens the conversation:
+
+Mark the appropriate messages as read.
+
+This must survive page refreshes and browser restarts.
+
+---
+
+# 11. CONNECTION RECOVERY
+
+Handle:
+
+* Internet disconnect
+* Wi-Fi switching
+* Browser sleep
+* Laptop sleep
+* Mobile network switching
+* Socket disconnection
+* Server restart
+
+Implement Socket.IO reconnection.
+
+When reconnecting:
+
+1. Authenticate socket.
+2. Restore presence.
+3. Synchronize missed messages.
+4. Synchronize unread counts.
+5. Reconcile message delivery states.
+6. Update UI.
+
+Never lose messages because the socket temporarily disconnected.
+
+MongoDB is the persistent source of truth.
+
+---
+
+# 12. CHAT LIST
+
+Create a professional conversation sidebar.
+
+Each conversation should display:
+
+* Profile picture
+* Username/name
+* Last message
+* Last message time
+* Unread message count
+* Online indicator
+* Message status where appropriate
+
+Sort conversations by latest activity.
+
+Unread conversations should be visually distinct.
+
+---
+
+# 13. SEARCH
+
+Implement user search.
+
+Users should be able to search by:
+
+* Username
+* Name
+* Email
+
+Use debounced API requests.
+
+Do not request the server on every keystroke.
+
+Display clean search results with:
+
+* Avatar
+* Name
+* Username
+* Online status
+
+Clicking a user should open/create a conversation.
+
+---
+
+# 14. CHAT WINDOW UI
+
+Build a polished messaging interface.
+
+Desktop:
+
+---
+
+| Conversations | Chat Header                  |
+|                |                              |
+| Search         | Messages                     |
+|                |                              |
+| User 1         |        Hello                 |
+| User 2         | Hello                         |
+| User 3         |        How are you?          |
+|                |                              |
+|                |------------------------------|
+|                | Message...             Send |
+------------------------------------------------
+
+Mobile:
+
+Use a proper mobile navigation pattern.
+
+Conversation list should occupy the screen initially.
+
+Opening a conversation should transition to the chat screen.
+
+Provide a clear back button.
+
+Do NOT create a desktop UI that simply shrinks on mobile.
+
+Design mobile intentionally.
+
+---
+
+# 15. MESSAGE UI
+
+Messages should have:
+
+* Sender/receiver alignment
+* Timestamp
+* Delivery status
+* Read status
+* Reply action
+* Delete action
+* Copy action
+
+Use message grouping.
+
+For example, avoid repeating the avatar for every message from the same sender.
+
+Add date separators:
+
+Today
+
+Yesterday
+
+September 10, 2026
+
+---
+
+# 16. RESPONSIVE DESIGN
+
+The application MUST work properly at:
+
+* 320px
+* 375px
+* 390px
+* 414px
+* 768px
+* 1024px
+* 1280px
+* 1440px+
+
+Test the layout at mobile, tablet, and desktop sizes.
+
+Avoid:
+
+* Horizontal scrolling
+* Overflow bugs
+* Tiny buttons
+* Text clipping
+* Broken message bubbles
+* Fixed widths that break mobile
+
+Use responsive Tailwind breakpoints.
+
+---
+
+# 17. DESIGN SYSTEM
+
+Create a consistent design system.
+
+Visual direction:
+
+* Modern
+* Minimal
+* Professional
+* Clean
+* Premium
+* Friendly
+* Developer-focused
+
+Use:
+
+* Rounded cards
+* Subtle borders
+* Soft shadows
+* Good spacing
+* Clear typography
+* Consistent iconography
+* Smooth transitions
+* Proper hover states
+
+Avoid excessive gradients.
+
+Avoid unnecessary animations.
+
+Do NOT make it look like a generic AI-generated dashboard.
+
+---
+
+# 18. DARK MODE
+
+Implement:
+
+* Light mode
+* Dark mode
+
+Persist the user's theme preference.
+
+Respect system preference initially.
+
+Ensure both themes have proper contrast and accessibility.
+
+---
+
+# 19. EMPTY STATES
+
+Create polished empty states.
+
+Examples:
+
+No conversations:
+
+"Your conversations will appear here."
+
+No messages:
+
+"Start the conversation 👋"
+
+No search results:
+
+"No users found."
+
+No internet:
+
+"You're offline. Messages will sync when you're back online."
+
+---
+
+# 20. LOADING STATES
+
+Use skeleton loaders instead of blank screens where appropriate.
+
+Implement:
+
+* Conversation skeleton
+* Message skeleton
+* User search skeleton
+* Profile skeleton
+
+Avoid excessive loading spinners.
+
+---
+
+# 21. ERROR HANDLING
+
+Implement proper error handling across frontend and backend.
+
+Handle:
+
+* Invalid credentials
+* Duplicate email
+* Duplicate username
+* Invalid JWT
+* Expired JWT
+* MongoDB errors
+* Socket errors
+* Network errors
+* Validation errors
+* Empty messages
+* Unauthorized access
+
+Show user-friendly messages.
+
+Never expose internal stack traces to users.
+
+---
+
+# 22. DATABASE MODELS
+
+Create proper Mongoose models.
+
+## User
+
+Fields:
+
+_id
+name
+username
+email
+password
+avatar
+bio
+isOnline
+lastSeen
+createdAt
+updatedAt
+
+Add appropriate indexes.
+
+Email and username must be unique.
+
+Never return password in API responses.
+
+---
+
+## Conversation
+
+Fields:
+
+_id
+participants
+lastMessage
+lastMessageAt
+createdAt
+updatedAt
+
+participants should reference User.
+
+Add indexes for efficient conversation lookup.
+
+---
+
+## Message
+
+Fields:
+
+_id
+conversationId
+sender
+receiver
+content
+messageType
+status
+deliveredAt
+readAt
+replyTo
+createdAt
+updatedAt
+
+Possible status values:
+
+sending
+sent
+delivered
+read
+
+Use timestamps.
+
+Add indexes for:
+
+conversationId
+createdAt
+receiver
+status
+
+---
+
+# 23. API STRUCTURE
+
+Create clean REST APIs.
+
+Example:
+
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/logout
+GET /api/auth/me
+
+GET /api/users/search
+GET /api/users/:id
+PUT /api/users/profile
+
+GET /api/conversations
+POST /api/conversations
+
+GET /api/messages/:conversationId
+POST /api/messages
+
+PATCH /api/messages/:id/read
+PATCH /api/messages/:id/delivered
+
+DELETE /api/messages/:id
+
+Use controllers/services/routes architecture.
+
+Do NOT put all backend logic inside server.js.
+
+---
+
+# 24. SOCKET.IO EVENTS
+
+Create clearly named socket events.
+
+Examples:
+
+connection
+disconnect
+
+user_online
+user_offline
+
+send_message
+new_message
+
+message_sent
+message_delivered
+message_read
+
+typing_start
+typing_stop
+
+sync_messages
+
+conversation_read
+
+Use a clean event architecture.
+
+Document the socket event flow.
+
+---
+
+# 25. SECURITY
+
+Implement:
+
+* Password hashing
+* JWT authentication
+* HTTP-only cookies where appropriate
+* CORS configuration
+* Helmet
+* Rate limiting
+* Input validation
+* MongoDB query protection
+* Message authorization
+* Conversation authorization
+* Protected Socket.IO connections
+
+Users must NEVER be able to:
+
+* Read another user's private conversations
+* Delete another user's messages without authorization
+* Modify another user's profile
+* Forge delivery/read states through unauthorized API calls
+
+Validate permissions on the backend.
+
+Never trust frontend state.
+
+---
+
+# 26. ENVIRONMENT VARIABLES
+
+Create:
+
+.env.example
+
+Example:
+
+MONGODB_URI=
+JWT_SECRET=
+CLIENT_URL=
+PORT=
+
+The actual values must NOT be committed to Git.
+
+For Replit:
+
+Use Replit Secrets.
+
+The application must read:
+
+process.env.MONGODB_URI
+
+---
+
+# 27. PROJECT STRUCTURE
+
+Use a clean structure similar to:
+
+root/
+│
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── layouts/
+│   │   ├── hooks/
+│   │   ├── context/
+│   │   ├── services/
+│   │   ├── socket/
+│   │   ├── utils/
+│   │   └── App.jsx
+│
+├── server/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── socket/
+│   ├── utils/
+│   └── server.js
+│
+├── .env.example
+├── package.json
+└── README.md
+
+You may improve the structure if necessary, but keep frontend/backend responsibilities clearly separated.
+
+---
+
+# 28. PERFORMANCE
+
+Optimize for real-world usage.
+
+Implement:
+
+* Pagination for messages
+* Infinite scrolling
+* Lazy loading where appropriate
+* Debounced search
+* Efficient MongoDB queries
+* Proper indexes
+* Socket event cleanup
+* React memoization where useful
+* Avoid unnecessary API calls
+* Avoid unnecessary re-renders
+
+Initially load the latest 30–50 messages.
+
+Load older messages when the user scrolls upward.
+
+---
+
+# 29. MESSAGE SYNCHRONIZATION
+
+Create a robust synchronization mechanism.
+
+On socket connection:
+
+* Identify authenticated user.
+* Register socket.
+* Update online status.
+* Check for messages requiring delivery synchronization.
+* Emit synchronization events.
+* Reconcile local state with server state.
+
+If a user has multiple devices, do not duplicate messages.
+
+The server should remain authoritative.
+
+---
+
+# 30. FRONTEND STATE
+
+Maintain separate state for:
+
+* Current user
+* Conversations
+* Active conversation
+* Messages
+* Online users
+* Typing users
+* Unread counts
+* Socket connection
+* Authentication
+* Theme
+
+Do not put everything into one giant React component.
+
+Create reusable hooks such as:
+
+useAuth()
+useSocket()
+useChat()
+usePresence()
+useMessages()
+useTypingIndicator()
+
+---
+
+# 31. ACCESSIBILITY
+
+Implement:
+
+* Keyboard navigation
+* Proper buttons
+* Accessible labels
+* Focus states
+* Sufficient contrast
+* Screen-reader-friendly controls
+
+Do not use clickable divs where semantic buttons are appropriate.
+
+---
+
+# 32. MOBILE UX
+
+Pay special attention to mobile.
+
+The message input should remain accessible above the mobile keyboard.
+
+Prevent the chat layout from jumping unexpectedly.
+
+Use safe-area-aware spacing where appropriate.
+
+Make buttons touch-friendly.
+
+The conversation screen should feel like a real mobile messaging application.
+
+---
+
+# 33. PROFILE / SETTINGS
+
+Create a settings page with:
+
+Profile
+
+* Edit name
+* Username
+* Bio
+* Avatar
+
+Account
+
+* Email
+* Change password
+* Logout
+
+Appearance
+
+* Light
+* Dark
+* System
+
+---
+
+# 34. NOTIFICATIONS
+
+For the first version:
+
+Implement in-app unread notifications.
+
+If the browser supports notifications, structure the code so browser push notifications can be added later.
+
+Do not introduce unnecessary third-party notification services.
+
+---
+
+# 35. README
+
+Create a professional README containing:
+
+* Project overview
+* Features
+* Tech stack
+* Architecture
+* Folder structure
+* Environment variables
+* MongoDB Atlas setup
+* Replit setup
+* Local development
+* Production deployment
+* Socket.IO architecture
+* Offline messaging behavior
+* Presence architecture
+* API documentation
+* Security considerations
+
+---
+
+# 36. MONGODB ATLAS
+
+Connect the application to MongoDB Atlas using:
+
+MONGODB_URI
+
+Make sure the backend:
+
+1. Loads environment variables.
+2. Connects to MongoDB.
+3. Handles connection errors.
+4. Logs successful connection.
+5. Gracefully handles database disconnects.
+
+Do NOT create a local MongoDB dependency.
+
+---
+
+# 37. REPLIT CONFIGURATION
+
+Make the application easy to run inside Replit.
+
+Configure the project so that:
+
+* Frontend starts correctly.
+* Backend starts correctly.
+* Required environment variables are documented.
+* Production build can be served correctly.
+* Socket.IO works correctly through the deployed application.
+
+Avoid hardcoding localhost URLs.
+
+Use environment variables for client/server URLs.
+
+---
+
+# 38. TESTING
+
+Before considering the application complete, test:
+
+### Authentication
+
+* Register
+* Login
+* Logout
+* Invalid credentials
+* Duplicate username/email
+
+### Messaging
+
+* Send message
+* Receive message
+* Refresh page
+* Open old conversation
+* Delete message
+
+### Real-time
+
+* Two browser sessions
+* Send messages between users
+* Typing indicator
+* Online/offline status
+* Read receipts
+* Delivery receipts
+
+### Offline
+
+Test:
+
+User A online
+User B offline
+
+User A sends message.
+
+Then:
+
+User B comes online.
+
+Verify:
+
+* Message appears
+* Delivery status updates
+* Conversation synchronizes
+* Read status works after opening chat
+
+### Mobile
+
+Test responsive behavior on mobile viewport.
+
+---
+
+# 39. IMPORTANT IMPLEMENTATION RULES
+
+DO NOT:
+
+* Use fake/mock chat data in production UI.
+* Store messages only in React state.
+* Fake online/offline status.
+* Fake delivery/read receipts.
+* Hardcode MongoDB credentials.
+* Put secrets in frontend code.
+* Put all backend logic in one file.
+* Ignore socket reconnection.
+* Mark users offline incorrectly when multiple tabs are open.
+* Reload the page to receive messages.
+* Use polling as the primary real-time mechanism.
+
+DO:
+
+* Use MongoDB as persistent source of truth.
+* Use Socket.IO for real-time events.
+* Use REST APIs for persistent CRUD operations.
+* Handle socket reconnection.
+* Handle offline users.
+* Track multiple sockets per user.
+* Validate authorization server-side.
+* Use proper indexes.
+* Keep the UI responsive.
+* Build reusable components.
+
+---
+
+# 40. DEVELOPMENT PROCESS
+
+Do NOT try to generate everything blindly in one giant implementation.
+
+Work in phases.
+
+## Phase 1
+
+Set up:
+
+* MERN architecture
+* React/Vite
+* Express
+* MongoDB Atlas
+* Environment variables
+* Basic routing
+
+Verify MongoDB connection.
+
+## Phase 2
+
+Implement:
+
+* User model
+* Authentication
+* JWT
+* Login/register UI
+* Protected routes
+
+Test authentication.
+
+## Phase 3
+
+Implement:
+
+* Conversation model
+* Message model
+* REST APIs
+* Chat UI
+
+Test persistent messaging.
+
+## Phase 4
+
+Implement Socket.IO:
+
+* Authentication
+* Connection management
+* Real-time messages
+* Online/offline presence
+
+Test with two users.
+
+## Phase 5
+
+Implement:
+
+* Typing indicators
+* Delivered status
+* Read status
+* Unread counts
+
+## Phase 6
+
+Implement:
+
+* Offline message synchronization
+* Reconnection
+* Multiple tabs/devices
+* Message reconciliation
+
+## Phase 7
+
+Implement:
+
+* Responsive mobile UI
+* Dark mode
+* Settings
+* Profile
+* Empty/loading/error states
+
+## Phase 8
+
+Production hardening:
+
+* Security
+* Validation
+* Rate limiting
+* Performance
+* Indexes
+* Error handling
+
+## Phase 9
+
+Testing:
+
+* Functional testing
+* Real-time testing
+* Offline testing
+* Mobile testing
+* Production build
+
+## Phase 10
+
+Final polish:
+
+* UI consistency
+* Animations
+* Accessibility
+* Remove console errors
+* Remove unused code
+* Fix warnings
+* Verify production build
+
+---
+
+# 41. FINAL QUALITY BAR
+
+The final application should feel like a real modern messaging product.
+
+It should NOT look like:
+
+"Student MERN Chat Project"
+
+It should feel like:
+
+"A polished production-ready communication platform."
+
+Prioritize:
+
+1. Reliability
+2. Real-time communication
+3. Correct message synchronization
+4. Security
+5. Mobile UX
+6. Clean architecture
+7. Professional UI
+8. Performance
+
+After each phase, run the application and verify it works before moving to the next phase.
+
+If you encounter an error, diagnose the root cause and fix it instead of bypassing the feature.
+
+Do not replace broken functionality with mock data.
+
+At the end, provide a concise summary of:
+
+* What was implemented
+* How MongoDB Atlas is configured
+* How Socket.IO works
+* How online/offline presence works
+* How offline messages synchronize
+* How to run the project
+* What environment variables are required
+* Any remaining limitations
+
+Start with Phase 1 now.
+Do not skip architecture or database setup.
+Do not use mock data as a substitute for the real MongoDB implementation.

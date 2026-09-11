@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Realtime Chat"
+description = "A production-minded real-time messaging workspace with authenticated conversations, presence, delivery states, and responsive mobile-first chat UX."
+version = "1.0.0"
+id = "artifacts/realtime-chat"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19042
+
+[services.development]
+run = "pnpm --filter @workspace/realtime-chat run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/realtime-chat", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/realtime-chat/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19042"
+BASE_PATH = "/"

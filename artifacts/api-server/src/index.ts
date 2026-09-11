@@ -1,5 +1,8 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { createServer } from "node:http";
+import { connectMongo } from "./db/mongo";
+import { attachRealtimeServer } from "./services/realtime";
 
 const rawPort = process.env["PORT"];
 
@@ -15,11 +18,11 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+const server = createServer(app);
+attachRealtimeServer(server);
 
+connectMongo().catch((error) => logger.error({ err: error }, "Continuing without MongoDB"));
+
+server.listen(port, () => {
   logger.info({ port }, "Server listening");
 });

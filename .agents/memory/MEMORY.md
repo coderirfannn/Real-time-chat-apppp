@@ -1,0 +1,1 @@
+- [MongoDB Atlas connectivity](mongodb-atlas.md) — Atlas can expose a present-but-unusable URI as a TLS/ReplicaSetNoPrimary error until network access is allowlisted.
