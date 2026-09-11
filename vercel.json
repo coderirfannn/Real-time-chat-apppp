@@ -1,6 +1,8 @@
 {
   "version": 2,
+  "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/realtime-chat build",
-  "outputDirectory": "artifacts/realtime-chat/dist/public"
+  "outputDirectory": "artifacts/realtime-chat/dist/public",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
