@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @workspace/realtime-chat build",
+  "outputDirectory": "artifacts/realtime-chat/dist/public"
+}
