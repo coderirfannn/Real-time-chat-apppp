@@ -82,11 +82,11 @@ function useRealtime(userId?: string) {
     };
     const updatePresence = ({ userId: changedId, isOnline, lastSeen }: { userId: string; isOnline: boolean; lastSeen: string | null }) => {
       queryClient.setQueryData(getListConversationsQueryKey(), (current: any[] | undefined) =>
-        current?.map((conversation) =>
+        Array.isArray(current) ? current.map((conversation) =>
           conversation.participant.id === changedId
             ? { ...conversation, participant: { ...conversation.participant, isOnline, lastSeen } }
             : conversation,
-        ),
+        ) : current,
       );
     };
 
@@ -171,7 +171,7 @@ function Home() {
   const logout = useLogout();
   const health = useHealthCheck({ query: { queryKey: ['/api/healthz'], refetchInterval: 30000 } });
   const realtime = useRealtime(me?.id);
-  const list = conversations || [];
+  const list = Array.isArray(conversations) ? conversations : [];
   const selected = list.find((conversation) => conversation.id === selectedId) || list[0];
   useEffect(() => { if (authError) setLocation('/login'); }, [authError, setLocation]);
   useEffect(() => { if (!selectedId && list[0]) setSelectedId(list[0].id); }, [selectedId, list]);
@@ -190,7 +190,8 @@ function NewConversation({ onClose, onCreated }: { onClose: () => void; onCreate
   const [q, setQ] = useState('');
   const create = useCreateConversation();
   const query = useSearchUsers({ q }, { query: { enabled: q.trim().length > 0, queryKey: getSearchUsersQueryKey({ q }), staleTime: 15000 } });
-  return <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/20 p-0 backdrop-blur-sm sm:items-center sm:p-5"><div className="w-full max-w-md rounded-t-[2rem] border bg-card p-6 shadow-float sm:rounded-[2rem]"><div className="flex items-center justify-between"><div><p className="font-mono-app text-[10px] uppercase tracking-[.16em] text-primary">New thread</p><h2 className="mt-1 text-xl font-extrabold">Who do you want to reach?</h2></div><button data-testid="button-close-new-conversation" onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted"><X size={18} /></button></div><div className="relative mt-5"><Search size={15} className="absolute left-3 top-3.5 text-muted-foreground" /><Input data-testid="input-search-users" autoFocus value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search by name or username" className="pl-9" /></div><div className="mt-3 max-h-64 overflow-y-auto">{q.trim() && query.isLoading && <p className="p-4 text-sm text-muted-foreground">Looking around…</p>}{q.trim() && query.isError && <ErrorNotice message="Search is unavailable right now." />}{query.data?.map((user) => <button data-testid={`button-user-result-${user.id}`} key={user.id} disabled={create.isPending} onClick={() => create.mutate({ data: { participantId: user.id } }, { onSuccess: (conversation) => { onCreated(conversation.id); onClose(); } })} className="flex w-full items-center gap-3 rounded-2xl p-3 text-left hover:bg-muted"><Avatar name={user.name} avatar={user.avatar} online={user.isOnline} /><span><span className="block text-sm font-extrabold">{user.name}</span><span className="block text-xs text-muted-foreground">@{user.username}</span></span><ArrowLeft className="ml-auto rotate-180 text-muted-foreground" size={16} /></button>)}</div>{!q.trim() && <p className="mt-5 rounded-xl bg-secondary p-3 text-xs leading-5 text-muted-foreground">Search for a name or handle to start a one-to-one thread.</p>}</div></div>;
+  const results = query.data ?? [];
+  return <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/20 p-0 backdrop-blur-sm sm:items-center sm:p-5"><div className="w-full max-w-md rounded-t-[2rem] border bg-card p-6 shadow-float sm:rounded-[2rem]"><div className="flex items-center justify-between"><div><p className="font-mono-app text-[10px] uppercase tracking-[.16em] text-primary">New thread</p><h2 className="mt-1 text-xl font-extrabold">Who do you want to reach?</h2></div><button data-testid="button-close-new-conversation" onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted"><X size={18} /></button></div><div className="relative mt-5"><Search size={15} className="absolute left-3 top-3.5 text-muted-foreground" /><Input data-testid="input-search-users" autoFocus value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search by name or username" className="pl-9" /></div><div className="mt-3 max-h-64 overflow-y-auto">{q.trim() && query.isLoading && <p className="p-4 text-sm text-muted-foreground">Looking around…</p>}{q.trim() && query.isError && <ErrorNotice message="Search is unavailable right now." />}{q.trim() && !query.isLoading && !query.isError && !results.length && <p className="p-4 text-sm text-muted-foreground">No people found. Ask them to create an account first.</p>}{results.map((user) => <button data-testid={`button-user-result-${user.id}`} key={user.id} disabled={create.isPending} onClick={() => create.mutate({ data: { participantId: user.id } }, { onSuccess: (conversation) => { onCreated(conversation.id); onClose(); } })} className="flex w-full items-center gap-3 rounded-2xl p-3 text-left hover:bg-muted"><Avatar name={user.name} avatar={user.avatar} online={user.isOnline} /><span><span className="block text-sm font-extrabold">{user.name}</span><span className="block text-xs text-muted-foreground">@{user.username}</span></span><ArrowLeft className="ml-auto rotate-180 text-muted-foreground" size={16} /></button>)}</div>{!q.trim() && <p className="mt-5 rounded-xl bg-secondary p-3 text-xs leading-5 text-muted-foreground">Search for a name or handle to start a one-to-one thread.</p>}</div></div>;
 }
 
 function EmptyThread({ onCreate }: { onCreate: () => void }) { return <section className="flex min-h-[70vh] flex-1 items-center justify-center bg-card p-6 md:rounded-[1.5rem] md:border md:shadow-soft"><div className="max-w-xs text-center"><div className="mx-auto flex h-16 w-16 rotate-3 items-center justify-center rounded-[1.4rem] bg-accent text-accent-foreground"><Sparkles size={26} /></div><h2 className="mt-6 text-2xl font-extrabold tracking-[-.04em]">Make the first move.</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Choose someone from your circle, then let the conversation find its rhythm.</p><Button data-testid="button-start-conversation" onClick={onCreate} className="mt-6">Start a conversation</Button></div></section>; }
@@ -200,6 +201,8 @@ function Thread({ conversation, me, onBack }: { conversation: any; me: any; onBa
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [before, setBefore] = useState<string | undefined>();
   const [optimistic, setOptimistic] = useState<any[]>([]);
+  const [latestMessages, setLatestMessages] = useState<any[]>([]);
+  const [olderMessages, setOlderMessages] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const key = getListMessagesQueryKey(conversation.id, before ? { before, limit: 50 } : { limit: 50 });
@@ -208,8 +211,18 @@ function Thread({ conversation, me, onBack }: { conversation: any; me: any; onBa
   const remove = useDeleteMessage();
   const read = useMarkConversationRead();
   const [typing, setTyping] = useState(false);
-  const messages = [...(data?.messages || []), ...optimistic];
-  useEffect(() => { setOptimistic([]); setBefore(undefined); }, [conversation.id]);
+  const loadedMessages = before ? [...olderMessages, ...latestMessages] : data?.messages || [];
+  const messages = [...loadedMessages, ...optimistic.filter((message) => !loadedMessages.some((loaded) => loaded.id === message.id))];
+  useEffect(() => { setOptimistic([]); setBefore(undefined); setLatestMessages([]); setOlderMessages([]); }, [conversation.id]);
+  useEffect(() => {
+    if (!before && data?.messages) setLatestMessages(data.messages);
+    if (before && data?.messages) {
+      setOlderMessages((current) => {
+        const known = new Set(current.map((message) => message.id));
+        return [...data.messages.filter((message) => !known.has(message.id)), ...current];
+      });
+    }
+  }, [before, data?.messages]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [data?.messages?.length, conversation.id]);
   useEffect(() => { if (conversation.unreadCount > 0) read.mutate({ conversationId: conversation.id }); }, [conversation.id, conversation.unreadCount]);
   useEffect(() => {
