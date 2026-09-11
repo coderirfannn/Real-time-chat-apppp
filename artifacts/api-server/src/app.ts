@@ -6,6 +6,7 @@ import { logger } from "./lib/logger";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
+import { env } from "./config/env";
 
 const app: Express = express();
 
@@ -29,7 +30,7 @@ app.use(
   }),
 );
 app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(cookieParser());
 app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: "draft-7", legacyHeaders: false }));
 app.use(express.json());

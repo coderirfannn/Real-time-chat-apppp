@@ -22,6 +22,7 @@ import {
   useCreateMessage,
   useDeleteMessage,
   useMarkConversationRead,
+  setBaseUrl,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
@@ -57,6 +58,8 @@ import {
 
 const queryClient = new QueryClient();
 let activeSocket: Socket | null = null;
+const apiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
+setBaseUrl(apiUrl || null);
 
 function useRealtime(userId?: string) {
   const [connected, setConnected] = useState(false);
@@ -68,7 +71,7 @@ function useRealtime(userId?: string) {
       return;
     }
 
-    const socket = io({
+    const socket = io(apiUrl || undefined, {
       path: '/api/socket.io',
       withCredentials: true,
       reconnection: true,
